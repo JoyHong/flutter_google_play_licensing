@@ -31,4 +31,8 @@ abstract class FlutterGooglePlayLicensingPlatform extends PlatformInterface {
     throw UnimplementedError('isAllowed() has not been implemented.');
   }
 
+  Future<String?> getUserId() {
+    throw UnimplementedError('getUserId() has not been implemented.');
+  }
+
 }

@@ -51,6 +51,7 @@ public class ServerManagedPolicy implements Policy {
     private static final String PREF_MAX_RETRIES = "maxRetries";
     private static final String PREF_RETRY_COUNT = "retryCount";
     private static final String PREF_LICENSING_URL = "licensingUrl";
+    private static final String PREF_USER_ID = "userId";
     private static final String DEFAULT_VALIDITY_TIMESTAMP = "0";
     private static final String DEFAULT_RETRY_UNTIL = "0";
     private static final String DEFAULT_MAX_RETRIES = "0";
@@ -65,6 +66,7 @@ public class ServerManagedPolicy implements Policy {
     private long mLastResponseTime = 0;
     private int mLastResponse;
     private String mLicensingUrl;
+    private String mUserId;
     private PreferenceObfuscator mPreferences;
 
     /**
@@ -83,6 +85,7 @@ public class ServerManagedPolicy implements Policy {
         mMaxRetries = Long.parseLong(mPreferences.getString(PREF_MAX_RETRIES, DEFAULT_MAX_RETRIES));
         mRetryCount = Long.parseLong(mPreferences.getString(PREF_RETRY_COUNT, DEFAULT_RETRY_COUNT));
         mLicensingUrl = mPreferences.getString(PREF_LICENSING_URL, null);
+        mUserId = mPreferences.getString(PREF_USER_ID, null);
     }
 
     /**
@@ -120,6 +123,7 @@ public class ServerManagedPolicy implements Policy {
             setValidityTimestamp(extras.get("VT"));
             setRetryUntil(extras.get("GT"));
             setMaxRetries(extras.get("GR"));
+            setUserId(rawData.userId);
         } else if (response == Policy.NOT_LICENSED) {
             // Clear out stale retry params
             setValidityTimestamp(DEFAULT_VALIDITY_TIMESTAMP);
@@ -127,6 +131,7 @@ public class ServerManagedPolicy implements Policy {
             setMaxRetries(DEFAULT_MAX_RETRIES);
             // Update the licensing URL
             setLicensingUrl(extras.get("LU"));
+            setUserId(null);
         }
 
         setLastResponse(response);
@@ -252,6 +257,15 @@ public class ServerManagedPolicy implements Policy {
 
     public String getLicensingUrl() {
         return mLicensingUrl;
+    }
+
+    private void setUserId(String userId) {
+        mUserId = userId;
+        mPreferences.putString(PREF_USER_ID, userId);
+    }
+
+    public String getUserId() {
+        return mUserId;
     }
 
     /**
