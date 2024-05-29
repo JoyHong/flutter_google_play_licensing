@@ -64,4 +64,7 @@ public interface LicenseCheckerCallback {
      * correctly. Should be considered fatal.
      */
     public void applicationError(int errorCode);
+
+    public void onInterceptResult(int responseCode, String signedData, String signature);
+
 }

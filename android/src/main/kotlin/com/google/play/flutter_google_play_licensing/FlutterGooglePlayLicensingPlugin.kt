@@ -7,18 +7,13 @@ import android.provider.Settings
 import com.google.android.vending.licensing.AESObfuscator
 import com.google.android.vending.licensing.LicenseChecker
 import com.google.android.vending.licensing.LicenseCheckerCallback
-import com.google.android.vending.licensing.LicenseCheckerCallback.ERROR_CHECK_IN_PROGRESS
-import com.google.android.vending.licensing.LicenseCheckerCallback.ERROR_INVALID_PACKAGE_NAME
-import com.google.android.vending.licensing.LicenseCheckerCallback.ERROR_INVALID_PUBLIC_KEY
-import com.google.android.vending.licensing.LicenseCheckerCallback.ERROR_MISSING_PERMISSION
-import com.google.android.vending.licensing.LicenseCheckerCallback.ERROR_NON_MATCHING_UID
-import com.google.android.vending.licensing.LicenseCheckerCallback.ERROR_NOT_MARKET_MANAGED
 import com.google.android.vending.licensing.ServerManagedPolicy
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import org.json.JSONObject
 import java.util.Locale
 
 /** FlutterGooglePlayLicensingPlugin */
@@ -41,9 +36,6 @@ class FlutterGooglePlayLicensingPlugin: FlutterPlugin, MethodCallHandler {
         "check" -> {
           check(call, result)
         }
-        "isAllowed" -> {
-          isAllowed(call, result)
-        }
         else -> {
           result.notImplemented()
         }
@@ -54,7 +46,7 @@ class FlutterGooglePlayLicensingPlugin: FlutterPlugin, MethodCallHandler {
     channel.setMethodCallHandler(null)
   }
 
-  private fun Context.checker(base64PublicKey: String, salt: ByteArray? = null): LicenseChecker {
+  private fun Context.checker(salt: ByteArray? = null): LicenseChecker {
     return LicenseChecker(
       this,
       ServerManagedPolicy(
@@ -65,70 +57,30 @@ class FlutterGooglePlayLicensingPlugin: FlutterPlugin, MethodCallHandler {
           Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
         )
       ),
-      base64PublicKey
+      null
     )
-  }
-
-  private fun LicenseChecker.checkAccess(onAllow: (Int) -> Unit = { _ -> }, onDontAllow: (Int) -> Unit = { _ -> }, onApplicationError: (Int) -> Unit = { _ -> }) {
-    checkAccess(object : LicenseCheckerCallback {
-      override fun allow(reason: Int) {
-        onAllow(reason)
-      }
-
-      override fun dontAllow(reason: Int) {
-        onDontAllow(reason)
-      }
-
-      override fun applicationError(errorCode: Int) {
-        onApplicationError(errorCode)
-      }
-    })
   }
 
   private fun check(call: MethodCall, result: Result) {
     val checker = context.checker(
-      base64PublicKey = call.argument<String>("base64PublicKey")!!,
       salt = call.argument<String>("salt")?.toHexByteArray)
-    checker.checkAccess(
-      onAllow = { reason ->
-        result.onMain().success(reason)
-      },
-      onDontAllow = { reason ->
-        result.onMain().error(reason.toString(), errorMessage = "dontAllow:$reason", errorDetails = "dontAllow:$reason")
-      },
-      onApplicationError = { errorCode ->
-        result.onMain().error(errorCode.toString(), errorMessage = "applicationError:${errorCodeToDes(errorCode)}", errorDetails = "applicationError:${errorCodeToDes(errorCode)}")
+    checker.checkAccess(object : LicenseCheckerCallback {
+      override fun allow(reason: Int) {
       }
-    )
-  }
-
-  private fun isAllowed(call: MethodCall, result: Result) {
-    val checker = context.checker(
-      base64PublicKey = call.argument<String>("base64PublicKey")!!,
-      salt = call.argument<String>("salt")?.toHexByteArray)
-    checker.checkAccess(
-      onAllow = {
-        result.onMain().success(true)
-      },
-      onDontAllow = {
-        result.onMain().success(false)
-      },
-      onApplicationError = { errorCode ->
-        result.onMain().error(errorCode.toString(), errorMessage = "applicationError:${errorCodeToDes(errorCode)}", errorDetails = "applicationError:${errorCodeToDes(errorCode)}")
+      override fun dontAllow(reason: Int) {
       }
-    )
-  }
-
-  private fun errorCodeToDes(errorCode: Int) : String {
-    return when (errorCode) {
-      ERROR_INVALID_PACKAGE_NAME -> "ERROR_INVALID_PACKAGE_NAME"
-      ERROR_NON_MATCHING_UID -> "ERROR_NON_MATCHING_UID"
-      ERROR_NOT_MARKET_MANAGED -> "ERROR_NOT_MARKET_MANAGED"
-      ERROR_CHECK_IN_PROGRESS -> "ERROR_CHECK_IN_PROGRESS"
-      ERROR_INVALID_PUBLIC_KEY -> "ERROR_INVALID_PUBLIC_KEY"
-      ERROR_MISSING_PERMISSION -> "ERROR_MISSING_PERMISSION"
-      else -> "UNKNOWN $errorCode"
-    }
+      override fun applicationError(errorCode: Int) {
+      }
+      override fun onInterceptResult(responseCode: Int, signedData: String?, signature: String?) {
+        JSONObject().apply {
+          put("responseCode", responseCode)
+          put("signedData", signedData ?: "")
+          put("signature", signature ?: "")
+        }.let { json ->
+          result.onMain().success(json.toString())
+        }
+      }
+    })
   }
 
   private object PlayLicensingConfig {

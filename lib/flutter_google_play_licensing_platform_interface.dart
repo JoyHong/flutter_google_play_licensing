@@ -23,12 +23,8 @@ abstract class FlutterGooglePlayLicensingPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<int> check({required String base64PublicKey, String? salt}) {
+  Future<String> check({String? salt}) {
     throw UnimplementedError('check() has not been implemented.');
-  }
-
-  Future<bool> isAllowed({required String base64PublicKey, String? salt}) {
-    throw UnimplementedError('isAllowed() has not been implemented.');
   }
 
 }

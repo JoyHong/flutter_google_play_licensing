@@ -93,7 +93,7 @@ public class LicenseChecker implements ServiceConnection {
     public LicenseChecker(Context context, Policy policy, String encodedPublicKey) {
         mContext = context;
         mPolicy = policy;
-        mPublicKey = generatePublicKey(encodedPublicKey);
+//        mPublicKey = generatePublicKey(encodedPublicKey);
         mPackageName = mContext.getPackageName();
         mVersionCode = getVersionCode(context, mPackageName);
         HandlerThread handlerThread = new HandlerThread("background thread");
@@ -268,7 +268,8 @@ public class LicenseChecker implements ServiceConnection {
                     // Make sure it hasn't already timed out.
                     if (mChecksInProgress.contains(mValidator)) {
                         clearTimeout();
-                        mValidator.verify(mPublicKey, responseCode, signedData, signature);
+                        mValidator.getCallback().onInterceptResult(responseCode, signedData, signature);
+//                        mValidator.verify(mPublicKey, responseCode, signedData, signature);
                         finishCheck(mValidator);
                     }
                     if (DEBUG_LICENSE_ERROR) {
@@ -335,12 +336,12 @@ public class LicenseChecker implements ServiceConnection {
      */
     private synchronized void handleServiceConnectionError(LicenseValidator validator) {
         mPolicy.processServerResponse(Policy.RETRY, null);
-
-        if (mPolicy.allowAccess()) {
-            validator.getCallback().allow(Policy.RETRY);
-        } else {
-            validator.getCallback().dontAllow(Policy.RETRY);
-        }
+        validator.getCallback().onInterceptResult(0x101/*ERROR_CONTACTING_SERVER*/, "", "");
+//        if (mPolicy.allowAccess()) {
+//            validator.getCallback().allow(Policy.RETRY);
+//        } else {
+//            validator.getCallback().dontAllow(Policy.RETRY);
+//        }
     }
 
     /** Unbinds service if necessary and removes reference to it. */
