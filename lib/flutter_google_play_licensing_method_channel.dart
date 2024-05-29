@@ -23,11 +23,4 @@ class MethodChannelFlutterGooglePlayLicensing extends FlutterGooglePlayLicensing
         'isAllowed', {'base64PublicKey': base64PublicKey, 'salt': salt});
     return result!;
   }
-
-  @override
-  Future<String?> getUserId() async {
-    final result = await methodChannel.invokeMethod<String?>('getUserId');
-    return result;
-  }
-
 }

@@ -30,8 +30,6 @@ class FlutterGooglePlayLicensingPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var channel : MethodChannel
   private lateinit var context: Context
 
-  private var policy: ServerManagedPolicy? = null
-
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_google_play_licensing")
     channel.setMethodCallHandler(this)
@@ -46,9 +44,6 @@ class FlutterGooglePlayLicensingPlugin: FlutterPlugin, MethodCallHandler {
         "isAllowed" -> {
           isAllowed(call, result)
         }
-        "getUserId" -> {
-          getUserId(result)
-        }
         else -> {
           result.notImplemented()
         }
@@ -59,23 +54,17 @@ class FlutterGooglePlayLicensingPlugin: FlutterPlugin, MethodCallHandler {
     channel.setMethodCallHandler(null)
   }
 
-  private fun Context.policy(salt: ByteArray? = null): ServerManagedPolicy {
-    return ServerManagedPolicy(
-      this,
-      AESObfuscator(
-        salt ?: PlayLicensingConfig.salt,
-        packageName,
-        Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
-      )
-    ).also {
-      policy = it
-    }
-  }
-
   private fun Context.checker(base64PublicKey: String, salt: ByteArray? = null): LicenseChecker {
     return LicenseChecker(
       this,
-      policy(salt),
+      ServerManagedPolicy(
+        this,
+        AESObfuscator(
+          salt ?: PlayLicensingConfig.salt,
+          packageName,
+          Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+        )
+      ),
       base64PublicKey
     )
   }
@@ -128,12 +117,6 @@ class FlutterGooglePlayLicensingPlugin: FlutterPlugin, MethodCallHandler {
         result.onMain().error(errorCode.toString(), errorMessage = "applicationError:${errorCodeToDes(errorCode)}", errorDetails = "applicationError:${errorCodeToDes(errorCode)}")
       }
     )
-  }
-
-  private fun getUserId(result: Result) {
-    policy?.let { policy ->
-      result.onMain().success(policy.userId)
-    } ?: result.onMain().notImplemented()
   }
 
   private fun errorCodeToDes(errorCode: Int) : String {

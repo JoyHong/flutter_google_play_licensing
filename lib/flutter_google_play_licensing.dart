@@ -10,8 +10,4 @@ class FlutterGooglePlayLicensing {
     return FlutterGooglePlayLicensingPlatform.instance
         .isAllowed(base64PublicKey: base64PublicKey, salt: salt);
   }
-
-  Future<String?> getUserId() {
-    return FlutterGooglePlayLicensingPlatform.instance.getUserId();
-  }
 }
